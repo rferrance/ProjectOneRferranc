@@ -23,7 +23,7 @@ public class MainActivity extends Activity
 	private EditText searchParameters_;
 	private TextView resultView_;
 	private TextView instructionsView_;
-	private CheckBox chkWoot, chkTech, chkWine, chkAcc, chkHome;
+	private CheckBox chkWoot, chkTech, chkWine, chkAcc, chkDeals;
 	HttpTask normUrlPuller = new HttpTask();
 	HttpTask wineUrlPuller = new HttpTask();
 	ExpandableListView listView_;
@@ -36,15 +36,19 @@ public class MainActivity extends Activity
 	private static final String WOOT_URL_ACC = "accessories.woot.com";
 	private static final String WOOT_URL_SPORT = "sport.woot.com";
 	private static final String WOOT_URL_TOOLS = "tools.woot.com";
+	private static final String WOOT_URL_DEALS = "http://deals.woot.com/deals/search?q=";
 	
 
 	String wootHtml;
 	JSONArray jsonString;
-	ArrayList<WootEvent> eventList;
-	ArrayList<WootEvent> otherSiteList;
-	ArrayList<Parent> arrayParents;
-	ArrayList<Parent> allDealsDisplay;
-	boolean isComputing;
+	ArrayList<WootEvent> eventList; // 
+	ArrayList<WootEvent> otherSiteList; // List of other sites
+	ArrayList<Parent> arrayParents; // List shown on gui
+	ArrayList<Parent> allDealsDisplay; // List of all deals
+	ArrayList<String> curSites; // List of sites to be displayed
+	ArrayList<String> allSites; // List of sites loaded
+	boolean isComputing, isSearchingDeals;
+	String searchFor; // String to search for
 	
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
@@ -60,10 +64,16 @@ public class MainActivity extends Activity
 		chkWoot = (CheckBox) findViewById(R.id.checkBox1);
 		chkTech = (CheckBox) findViewById(R.id.checkBox2);
 		chkWine = (CheckBox) findViewById(R.id.checkBox3);
-		chkHome = (CheckBox) findViewById(R.id.checkBox4);
+		chkDeals = (CheckBox) findViewById(R.id.checkBox4);
+		curSites = new ArrayList<String>();
+		curSites.add(WOOT_URL_NORM); // Start it out with the woot norm url
+		allSites = new ArrayList<String>();
+		allSites.add(WOOT_URL_NORM); // Start it out with the woot norm url
 		// Get the string of the html code
 		normUrlPuller.execute(WOOT_URL_BASE + WOOT_URL_NORM + WOOT_API_KEY);
 		isComputing = true; // Set computing variable
+		isSearchingDeals = false;
+		searchFor = "";
 		
 		setChkBoxListeners(); // Set up check box listeners
 		resultView_.setText("Loading Woot Data"); // Tell the user the page is loading
@@ -72,7 +82,10 @@ public class MainActivity extends Activity
 			public void onClick(View v) {
 				// Check that the textedit isn't empty
 				String search = searchParameters_.getText().toString();
-				
+				if(isSearchingDeals) {
+					addRemoveSite(true, (WOOT_URL_DEALS + search));
+					searchFor = search;
+				}
 				if((wootHtml != null) && (!isComputing)) {
 					resultView_.setText("Searching...");
 					threadedRequest(search); // Search for the string
@@ -112,6 +125,7 @@ public class MainActivity extends Activity
 			            listView_.setAdapter(new MyCustomAdapter(MainActivity.this,arrayParents));
 						MainActivity.this.resultView_.setText("No deals found.");
 					}
+					isComputing = false;
 				}
 			};
 
@@ -154,7 +168,8 @@ public class MainActivity extends Activity
 									price = "$" + obja.getJSONObject(j).getString("SalePrice");	
 								}
 							} 
-							if(obj.has("Title") && obj.getString("Title").toLowerCase().contains(search.toLowerCase())) {
+							if((obj.has("Title") && obj.getString("Title").toLowerCase().contains(search.toLowerCase())) 
+									|| (p.getTitle().toLowerCase().contains(search.toLowerCase()))) {
 								p.addArrayChild(price + ": " + obj.getString("Title"));
 							}
 						}
@@ -163,7 +178,8 @@ public class MainActivity extends Activity
 						e.printStackTrace();
 					}						
 				}
-				if(w.getTitle().toLowerCase().contains(search.toLowerCase()) || !p.getArrayChildren().isEmpty()) {
+				if(curSites.contains(w.getSite()) && (w.getTitle().toLowerCase().contains(search.toLowerCase())
+						|| !p.getArrayChildren().isEmpty())) {
 					if(w.getType().equals("Daily")) {
 						arrayParents.get(0).addArrayChild(price + ": " + w.getTitle() + " (" + w.getSite() + ")");
 					} else if(w.getType().equals("Moofi")) {
@@ -172,6 +188,8 @@ public class MainActivity extends Activity
 						arrayParents.get(2).addArrayChild(w.getTitle() + " (" + w.getSite() + ")");
 					} else if(w.getType().equals("WootOff")) {
 						arrayParents.get(3).addArrayChild(price + ": " + w.getTitle() + " (" + w.getSite() + ")");
+					} else if(w.getType().equals("Deals")) {
+						arrayParents.get(4).addArrayChild(w.getTitle() + " (" + w.getSite() + ")");
 					} else if(w.getType().equals("WootPlus")) {
 						p.setTitle(w.getTitle() + " (" + w.getSite() + ")");
 						arrayParents.add(p);
@@ -212,6 +230,10 @@ public class MainActivity extends Activity
         parent.setTitle("Woot Offs ");
         parent.setArrayChildren(new ArrayList<String>());
         arrayParents.add(parent);
+        parent = new Parent();
+        parent.setTitle("Community Deals ");
+        parent.setArrayChildren(new ArrayList<String>());
+        arrayParents.add(parent);
 	}
 	
 	/*
@@ -219,27 +241,29 @@ public class MainActivity extends Activity
 	 */
 	public void addRemoveSite(boolean add, String url) {
 		if(add && !isComputing) { // Add deals from site
-			normUrlPuller = new HttpTask();
-			normUrlPuller.interfaceNotify = this;
-			resultView_.setText("Loading " + url);
-			normUrlPuller.execute(WOOT_URL_BASE + url + WOOT_API_KEY);
-			isComputing = true; // Set computing variable
-		} else if (!isComputing) { // Remove deals from site
-			/*
-			WootEvent w = eventList.lastIndexOf(url);
-			while (w != null) {
-				remove(w.g)
-				w = eventList.lastIndexOf(url);
-			} */
-			resultView_.setText("Removing " + url);
-			WootEvent w;
-			for(int i = 0;i < eventList.size(); i++) {
-				w = eventList.get(i);
-				if(w.getSite().equals(url)) {
-					eventList.remove(i);
-					i--;
-				}
+			if(allSites.contains(url) && (!url.contains(WOOT_URL_DEALS))) { // Sites deals are loaded
+				curSites.add(url);
+				threadedRequest("");  // Display all deals
+			} else if (!url.contains(WOOT_URL_DEALS)) { // Does not have it loaded
+				allSites.add(url);
+				curSites.add(url);
+				normUrlPuller = new HttpTask();
+				normUrlPuller.interfaceNotify = this;
+				resultView_.setText("Loading " + url);
+				normUrlPuller.execute(WOOT_URL_BASE + url + WOOT_API_KEY);
+				isComputing = true; // Set computing variable
+			} else {
+				allSites.add(url);
+				curSites.add(url);
+				normUrlPuller = new HttpTask();
+				normUrlPuller.interfaceNotify = this;
+				resultView_.setText("Loading " + url);
+				normUrlPuller.execute(url);
+				isComputing = true; // Set computing variable
 			}
+		} else if (!isComputing) { // Remove deals from site
+			resultView_.setText("Removing " + url);
+			curSites.remove(url);
 			threadedRequest("");  // Display all deals
 		} else {
 			resultView_.setText("Please wait for the last action to finish.");
@@ -259,18 +283,25 @@ public class MainActivity extends Activity
 		if(eventList == null) {
 			eventList = normUrlPuller.getEvents();
 			wootHtml = normUrlPuller.getResult();
+			
 			// normUrlPuller = new HttpTask();
 			// normUrlPuller.interfaceNotify = this;
 			// normUrlPuller.execute(WOOT_URL_BASE + WOOT_URL_WINE + WOOT_API_KEY);
 			// resultView_.setText("Loading...");
 		} else {
 			otherSiteList = normUrlPuller.getEvents();
+			wootHtml = normUrlPuller.getResult().substring(0, 100);
 			for(WootEvent w: otherSiteList) {
 				eventList.add(w);
 			}
 		}
-		isComputing = false;
-		threadedRequest("");  // Display all deals
+		if(normUrlPuller.getEvents().isEmpty() && wootHtml != "") { // It retrieved Html for search
+			parseDealsHtml();
+		} else {
+			wootHtml = normUrlPuller.getResult().substring(0, 100);
+			threadedRequest("");  // Display all deals
+		}
+		normUrlPuller.clearVars(); // Clear the variables
 	}
 	
 	/*
@@ -323,20 +354,30 @@ public class MainActivity extends Activity
 			}
 		});
 		// Click listener for home checkbox
-		chkHome.setOnClickListener(new OnClickListener() {
+		chkDeals.setOnClickListener(new OnClickListener() {
 			@Override
 			public void onClick(View v) {
-				if(isComputing) {
-					chkWoot.setChecked(!((CheckBox) v).isChecked());
+
+				if (((CheckBox) v).isChecked()) { // Box is checked
+					isSearchingDeals = true;
 				}
-				if (((CheckBox) v).isChecked()) {
-					addRemoveSite(true, WOOT_URL_HOME);
-				}
-				else {
-					addRemoveSite(false, WOOT_URL_HOME);
+				else { // Box not checked
+					isSearchingDeals = false;
 				}
 			}
 		});
+	}
+	
+	public void parseDealsHtml() {
+		String temp = wootHtml.substring(wootHtml.indexOf("forumList deal clearfix"));
+		for(String s: temp.split("forumList deal clearfix")) {
+			WootEvent w = new WootEvent();
+			w.setSite("deals.woot.com");
+			w.setType("Deals");
+			w.setTitle(s.substring(s.indexOf(("<img alt=\"")+11),s.indexOf("\"",s.indexOf("<img alt=\"")+11)));
+			eventList.add(w);
+		}
+		threadedRequest(searchFor);
 	}
 	
 }
