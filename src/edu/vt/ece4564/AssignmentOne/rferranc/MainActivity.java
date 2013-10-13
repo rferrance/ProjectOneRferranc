@@ -41,7 +41,7 @@ public class MainActivity extends Activity
 
 	String wootHtml;
 	JSONArray jsonString;
-	ArrayList<WootEvent> eventList; // 
+	ArrayList<WootEvent> eventList; // List of events
 	ArrayList<WootEvent> otherSiteList; // List of other sites
 	ArrayList<Parent> arrayParents; // List shown on gui
 	ArrayList<Parent> allDealsDisplay; // List of all deals
@@ -73,6 +73,7 @@ public class MainActivity extends Activity
 		normUrlPuller.execute(WOOT_URL_BASE + WOOT_URL_NORM + WOOT_API_KEY);
 		isComputing = true; // Set computing variable
 		isSearchingDeals = false;
+		eventList = new ArrayList<WootEvent>();
 		searchFor = "";
 		
 		setChkBoxListeners(); // Set up check box listeners
@@ -86,7 +87,7 @@ public class MainActivity extends Activity
 					addRemoveSite(true, (WOOT_URL_DEALS + search));
 					searchFor = search;
 				}
-				if((wootHtml != null) && (!isComputing)) {
+				if((!eventList.isEmpty()) && (!isComputing)) {
 					resultView_.setText("Searching...");
 					threadedRequest(search); // Search for the string
 				} else if(isComputing) {
@@ -152,12 +153,23 @@ public class MainActivity extends Activity
 			makeParents();
 	        // Loop through all events in eventlist
 			for(WootEvent w: eventList) {
-				 JSONObject obj;
-				 JSONArray obja;
+				 // JSONObject obj;
+				 // JSONArray obja;
 				 String price = "";
 				 // Make a temp parent for wootPlus
 				 Parent p = new Parent();
 				 p.setArrayChildren(new ArrayList<String>());
+				 if(w.getType().equals("WootPlus")) { // if wootplus, add the matching sub deals
+					 for(String s: w.getItems()) {
+						 if(s.toLowerCase().contains(search.toLowerCase()) ||
+								 w.getTitle().toLowerCase().contains(search.toLowerCase())) {
+							 p.addArrayChild(s);
+						 }
+					 }
+				 }
+				 price = w.getPrice();
+				 
+				 /*
 				 for(int i = 0; i < w.getOffers().length(); i++) {
 					try {
 						obj = w.getOffers().getJSONObject(i);
@@ -177,7 +189,8 @@ public class MainActivity extends Activity
 						// TODO Auto-generated catch block
 						e.printStackTrace();
 					}						
-				}
+				}*/
+				
 				if(curSites.contains(w.getSite()) && (w.getTitle().toLowerCase().contains(search.toLowerCase())
 						|| !p.getArrayChildren().isEmpty())) {
 					if(w.getType().equals("Daily")) {
@@ -280,7 +293,7 @@ public class MainActivity extends Activity
 		// TODO Auto-generated method stub
 		resultView_.setText("Loading Complete");
 		
-		if(eventList == null) {
+		if(eventList.isEmpty()) {
 			eventList = normUrlPuller.getEvents();
 			wootHtml = normUrlPuller.getResult();
 			
@@ -290,7 +303,7 @@ public class MainActivity extends Activity
 			// resultView_.setText("Loading...");
 		} else {
 			otherSiteList = normUrlPuller.getEvents();
-			wootHtml = normUrlPuller.getResult().substring(0, 100);
+			wootHtml = normUrlPuller.getResult();
 			for(WootEvent w: otherSiteList) {
 				eventList.add(w);
 			}
@@ -298,7 +311,7 @@ public class MainActivity extends Activity
 		if(normUrlPuller.getEvents().isEmpty() && wootHtml != "") { // It retrieved Html for search
 			parseDealsHtml();
 		} else {
-			wootHtml = normUrlPuller.getResult().substring(0, 100);
+			wootHtml = normUrlPuller.getResult();
 			threadedRequest("");  // Display all deals
 		}
 		normUrlPuller.clearVars(); // Clear the variables

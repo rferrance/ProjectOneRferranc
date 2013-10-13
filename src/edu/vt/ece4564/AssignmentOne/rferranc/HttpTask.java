@@ -87,7 +87,7 @@ public class HttpTask extends AsyncTask<String, String, String> {
     protected void onPostExecute(String result) {
         super.onPostExecute(result);
         //Do anything with response..
-        resultStr = result;
+        resultStr = "";
         WootEvent w = null;
 		int i = 0;
 		JSONArray jsonString;
@@ -105,6 +105,30 @@ public class HttpTask extends AsyncTask<String, String, String> {
 					w.setTitle(obj.getString("Title"));
 					w.setID(obj.getString("Id"));
 					w.setOffers(obj.getJSONArray("Offers"));
+					w.setItems(new ArrayList<String>());
+					String price = "";
+					JSONObject objb;
+					JSONArray obja;
+					for(int k = 0; k < w.getOffers().length(); k++) {
+				
+						objb = w.getOffers().getJSONObject(k);
+						if(objb.has("Items")) {
+							obja = objb.getJSONArray("Items");
+							for(int j = 0; j < obja.length(); j++) {
+								if(obja.getJSONObject(j).has("SalePrice")) {
+									price = "$" + obja.getJSONObject(j).getString("SalePrice");	
+								}
+							} 
+								if(w.getType().equals("WootPlus")) {
+									w.addItem(price + ": " + objb.getString("Title"));
+								}
+								else {
+									w.setPrice(price);
+								}
+							}
+					
+					}
+					w.setOffers(null);
 					w.setSite(obj.getString("Site"));
 					eventList.add(w);
 					obj = null;
@@ -116,6 +140,7 @@ public class HttpTask extends AsyncTask<String, String, String> {
 			}
 		} else { // Result is HTML data
 			eventList = new ArrayList<WootEvent>();
+			resultStr = result;
 		}
 		
 		interfaceNotify.processFinish();

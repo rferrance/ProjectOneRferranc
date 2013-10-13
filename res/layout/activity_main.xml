@@ -41,7 +41,7 @@
         android:layout_alignBaseline="@+id/checkBox1"
         android:layout_alignBottom="@+id/checkBox1"
         android:layout_alignLeft="@+id/checkBox3"
-        android:text="Home" />
+        android:text="Deals" />
 
     <Button
         android:id="@+id/button1"

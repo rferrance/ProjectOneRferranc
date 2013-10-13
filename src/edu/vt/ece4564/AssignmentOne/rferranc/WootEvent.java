@@ -1,5 +1,7 @@
 package edu.vt.ece4564.AssignmentOne.rferranc;
 
+import java.util.ArrayList;
+
 import org.json.JSONArray;
 
 public class WootEvent {
@@ -10,6 +12,8 @@ public class WootEvent {
 	private String site;
 	private String title;
 	private String type;
+	private String price;
+	private ArrayList<String> items;
 	
 	public String getType() {
 		return type;
@@ -52,5 +56,20 @@ public class WootEvent {
 	}
 	public void setID(String iD) {
 		ID = iD;
+	}
+	public String getPrice() {
+		return price;
+	}
+	public void setPrice(String price) {
+		this.price = price;
+	}
+	public ArrayList<String> getItems() {
+		return items;
+	}
+	public void setItems(ArrayList<String> items) {
+		this.items = items;
+	}
+	public void addItem(String item) {
+		items.add(item);
 	}
 }
