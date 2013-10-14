@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<sequence-diagram version="1.1.4" icons="true">  
+  <object id="1" language="java" name="edu.vt.ece4564.AssignmentOne.rferranc.HttpTask" project="ProjectOneRferranc" 
+    file="/ProjectOneRferranc/src/edu/vt/ece4564/AssignmentOne/rferranc/HttpTask.java" binary="false" label="httpTask" 
+    type="class" autoSize="true">    
+    <position height="-1" width="-1" x="59" y="0"/>    
+    <execution id="2">      
+      <position height="169" width="177" x="5" y="98"/>    
+    </execution>    
+    <execution id="4">      
+      <position height="21" width="177" x="5" y="140"/>    
+    </execution>    
+    <execution id="6">      
+      <position height="84" width="7" x="90" y="162"/>    
+    </execution>    
+    <execution id="8">      
+      <position height="21" width="7" x="90" y="204"/>    
+    </execution>  
+  </object>  
+  <message id="3" operation="execute(Params[]):android.os.AsyncTask&lt;Params,Progress,Result&gt;">    
+    <end type="SOURCE" refId="2"/>    
+    <end type="TARGET" refId="4"/>  
+  </message>  
+  <message id="5" operation="doInBackground(Params[]):Result">    
+    <end type="SOURCE" refId="2"/>    
+    <end type="TARGET" refId="6"/>  
+  </message>  
+  <message id="7" operation="onPostExecute(Result):void">    
+    <end type="SOURCE" refId="6"/>    
+    <end type="TARGET" refId="8"/>  
+  </message>
+</sequence-diagram>
